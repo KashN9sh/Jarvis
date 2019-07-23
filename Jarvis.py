@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from gtts import gTTS
 import speech_recognition as sr
 from pygame import mixer
-
+import paho.mqtt.client as mqttClient
 #import bluetooth
 
 punctuations = '''!()-[]{};:'"\,<>./?@#$%^&*_~'''
@@ -19,23 +19,96 @@ mp3_name = "1.mp3"
 mixer.init()
 
 f = 1
+vkl=0
+
+def on_connect(client, userdata, flags, rc):
+
+    if rc == 0:
+
+        print("Connected to broker")
+
+        global Connected                #Use global variable
+        Connected = True                #Signal connection
+
+    else:
+
+        print("Connection failed")
+
+Connected = False   #global variable for the state of the connection
+
+broker_address= "m24.cloudmqtt.com"
+port = 	17587
+user = "fnetydgq"
+password = "SEbDu7GOHR35"
+
+client = mqttClient.Client("Python")               #create new instance
+client.username_pw_set(user, password=password)    #set username and password
+client.on_connect= on_connect                      #attach function to callback
+client.connect(broker_address, port=port)          #connect to broker
+
+
+
 while f > 0:
 
+    client.on_connect= on_connect                      #attach function to callback
+    client.connect(broker_address, port=port)          #connect to broker
 
+    client.loop_start()        #start the loop
+
+
+    client.publish("test/sc1",vkl)
+    time.sleep(1)
+
+    client.disconnect()
+    client.loop_stop()
 
     r = sr.Recognizer()
 
     with sr.Microphone() as source:
         print("Скажите что-нибудь")
         audio = r.listen(source)
+        client.on_connect= on_connect                      #attach function to callback
+        client.connect(broker_address, port=port)          #connect to broker
+
+        client.loop_start()        #start the loop
+
+
+        client.publish("test/sc1",vkl)
+        time.sleep(1)
+
+        client.disconnect()
+        client.loop_stop()
 
     try:
         print(r.recognize_google(audio, language="ru-RU"))
         a=r.recognize_google(audio, language="ru-RU")
+        client.on_connect= on_connect                      #attach function to callback
+        client.connect(broker_address, port=port)          #connect to broker
+
+        client.loop_start()        #start the loop
+
+
+        client.publish("test/sc1",vkl)
+        time.sleep(1)
+
+        client.disconnect()
+        client.loop_stop()
 
 
 
-        #   if (a == "включить" or a == "вкв" or a == "включи"):
+        if (a == "включить" or a == "вкв" or a == "включи" or a == "ключи"):
+              vkl=1
+              client.on_connect= on_connect                      #attach function to callback
+              client.connect(broker_address, port=port)          #connect to broker
+
+              client.loop_start()        #start the loop
+
+
+              client.publish("test/sc1",1)
+              time.sleep(1)
+
+              client.disconnect()
+              client.loop_stop()
         #   bd_addr = "98:D3:32:10:DE:A4"
         #
         #   port = 1
@@ -46,7 +119,19 @@ while f > 0:
         #   sock.send("1111")
         #   sock.close()
 
-        #   if (a == "выключить" or a == "выключи"):
+        if (a == "выключить" or a == "выключи"):
+               vkl=0
+               client.on_connect= on_connect                      #attach function to callback
+               client.connect(broker_address, port=port)          #connect to broker
+
+               client.loop_start()        #start the loop
+
+
+               client.publish("test/sc1",0)
+               time.sleep(1)
+
+               client.disconnect()
+               client.loop_stop()
         #   bd_addr = "98:D3:32:10:DE:A4"
         #   port = 1
         #   sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
@@ -269,31 +354,8 @@ while f > 0:
                     now_time = datetime.datetime.now()
                     mp3_name = a + ".mp3"
             else:
-                print("Научи")
-                x = "Научи"
-                tts = gTTS(text=x, lang='ru')
-                tts.save(mp3_name)
-                mixer.music.load(mp3_name)
-                mixer.music.play()
-                while mixer.music.get_busy():
-                    time.sleep(0.1)
-                if (os.path.exists(mp3_nameold) and (mp3_nameold != "1.mp3")):
-                    os.remove(mp3_nameold)
-                    mp3_nameold = mp3_name
-                    now_time = datetime.datetime.now()
-                    mp3_name = now_time.strftime("%S") + ".mp3"
+                print("Я такое не умею")
 
-                no_punct = ""
-
-                file = open(a + ".txt", "w")
-                file.write(input())
-                file.close()
-
-                file = open(a + ".txt", "r")
-                a = file.read()
-
-                tts = gTTS(text=a, lang='ru')
-                tts.save(phrase2)
 
 
 
@@ -308,5 +370,14 @@ while f > 0:
         print("Робот не расслышал фразу")
     except sr.RequestError as e:
         print("Ошибка сервиса; {0}".format(e))
+    client.on_connect= on_connect                      #attach function to callback
+    client.connect(broker_address, port=port)          #connect to broker
+
+    client.loop_start()        #start the loop
 
 
+    client.publish("test/sc1",vkl)
+    time.sleep(1)
+
+    client.disconnect()
+    client.loop_stop()
