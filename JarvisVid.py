@@ -10,10 +10,35 @@ from pygame import mixer
 import numpy as np
 import cv2
 import os
-
+import paho.mqtt.client as mqttClient
 #import bluetooth
 
 punctuations = '''!()-[]{};:'"\,<>./?@#$%^&*_~'''
+
+def on_connect(client, userdata, flags, rc):
+
+    if rc == 0:
+
+        print("Connected to broker")
+
+        global Connected                #Use global variable
+        Connected = True                #Signal connection
+
+    else:
+
+        print("Connection failed")
+
+Connected = False   #global variable for the state of the connection
+
+broker_address= "m24.cloudmqtt.com"
+port = 	17587
+user = "fnetydgq"
+password = "SEbDu7GOHR35"
+
+client = mqttClient.Client("Python")               #create new instance
+client.username_pw_set(user, password=password)    #set username and password
+client.on_connect= on_connect                      #attach function to callback
+client.connect(broker_address, port=port)
 
 mp3_nameold = '111'
 mp3_name = "1.mp3"
@@ -30,12 +55,15 @@ cap = cv2.VideoCapture(0)
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 id = 0
+vkl=0
 
-names = ['None', 'Dasha', 'Nastya', 'Romario','Egor']
+names = ['None', 'Dasha', 'Nastya', 'Romario','Romario']
 while True:
 
+    putin = cv2.imread('C:\\Users\\Kash\\Desktop\\img.jpg')
     ret,img = cap.read()
     img=cv2.flip(img,1)
+    img = np.concatenate((img, putin), axis=1)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     faces = face_cascade.detectMultiScale(
@@ -47,7 +75,7 @@ while True:
 
     for (x,y,w,h) in faces:
         ret, img = cap.read()
-        img = cv2.flip(img, 1)  # Flip vertically
+        img = cv2.flip(img, 1)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         faces = face_cascade.detectMultiScale(
@@ -60,12 +88,12 @@ while True:
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
             id,confidence = recognizer.predict(gray[y:y + h, x:x + w])
 
-            # Check if confidence is less them 100 ==> "0" is perfect match
-            if (confidence < 100):
+
+            if (confidence <=55):
                 id = names[id]
                 confidence = "  {0}%".format(round(100 - confidence))
 
-                while id=='Romario':
+                if id=='Romario':
 
 
 
@@ -80,26 +108,50 @@ while True:
                         a=r.recognize_google(audio, language="ru-RU")
 
 
-                        '''if (a == "включить" or a == "вкв" or a == "включи"):
-                           bd_addr = "98:D3:32:10:DE:A4"
+                        if (a == "включить" or a == "вкв" or a == "включи" or a == "ключи"):
 
-                           port = 1
+                              vkl=1
+                              client.on_connect= on_connect                      #attach function to callback
+                              client.connect(broker_address, port=port)          #connect to broker
 
-                           sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-                           sock.connect((bd_addr, port))
+                              client.loop_start()        #start the loop
 
-                           sock.send("1111")
-                           sock.close()
+
+                              client.publish("test/sc1",1)
+                              time.sleep(1)
+
+                              client.disconnect()
+                              client.loop_stop()
+                        #   bd_addr = "98:D3:32:10:DE:A4"
+                        #
+                        #   port = 1
+                        #
+                        #   sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+                        #   sock.connect((bd_addr, port))
+                        #
+                        #   sock.send("1111")
+                        #   sock.close()
 
                         if (a == "выключить" or a == "выключи"):
-                        bd_addr = "98:D3:32:10:DE:A4"
-                        port = 1
-                        sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-                        sock.connect((bd_addr, port))
-                        sock.send("0000")
-                        sock.close()
+                               client.on_connect= on_connect                      #attach function to callback
+                               client.connect(broker_address, port=port)          #connect to broker
 
-                        if (a == "привет"):
+                               client.loop_start()        #start the loop
+
+
+                               client.publish("test/sc1",0)
+                               time.sleep(1)
+
+                               client.disconnect()
+                               client.loop_stop()
+                        #   bd_addr = "98:D3:32:10:DE:A4"
+                        #   port = 1
+                        #   sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+                        #   sock.connect((bd_addr, port))
+                        #   sock.send("0000")
+                        #   sock.close()
+
+                        '''if (a == "привет"):
 
                         if (b == 0):
                             print("Здравствуй, хозяин!")
@@ -314,31 +366,8 @@ while True:
                                     now_time = datetime.datetime.now()
                                     mp3_name = a + ".mp3"
                             else:
-                                print("Научи")
-                                x = "Научи"
-                                tts = gTTS(text=x, lang='ru')
-                                tts.save(mp3_name)
-                                mixer.music.load(mp3_name)
-                                mixer.music.play()
-                                while mixer.music.get_busy():
-                                    time.sleep(0.1)
-                                if (os.path.exists(mp3_nameold) and (mp3_nameold != "1.mp3")):
-                                    os.remove(mp3_nameold)
-                                    mp3_nameold = mp3_name
-                                    now_time = datetime.datetime.now()
-                                    mp3_name = now_time.strftime("%S") + ".mp3"
+                                print("Я такое не умею")
 
-                                no_punct = ""
-
-                                file = open(a + ".txt", "w")
-                                file.write(input())
-                                file.close()
-
-                                file = open(a + ".txt", "r")
-                                a = file.read()
-
-                                tts = gTTS(text=a, lang='ru')
-                                tts.save(phrase2)
 
 
 
@@ -353,6 +382,7 @@ while True:
                         print("Робот не расслышал фразу")
                     except sr.RequestError as e:
                         print("Ошибка сервиса; {0}".format(e))
+
             else:
                 id = "unknown"
                 confidence = "  {0}%".format(round(100 - confidence))
@@ -362,7 +392,7 @@ while True:
 
         cv2.imshow('camera', img)
 
-        k = cv2.waitKey(10) & 0xff  # Press 'ESC' for exiting video
+        k = cv2.waitKey(10) & 0xff
         if k == 27:
             break
 

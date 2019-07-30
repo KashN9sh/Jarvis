@@ -5,7 +5,7 @@ import os
 
 face_cascade = cv2.CascadeClassifier('C:\\Users\\Kash\\AppData\\Local\\Programs\\Python\\Python36-32\\Lib\\site-packages\\cv2\\data\\haarcascade_frontalface_default.xml')
 eye_cascade = cv2.CascadeClassifier('C:\\Kash\\AppData\\Local\\Programs\\Python\\Python36-32\\Lib\\site-packages\\cv2\\data\\haarcascade_eye.xml')
-face_id = 2
+face_id = 3
 cap = cv2.VideoCapture(0)
 count = 0
 while True:
@@ -26,7 +26,7 @@ while True:
     k = cv2.waitKey(100) & 0xff  # Press 'ESC' for exiting video
     if k == 27:
         break
-    elif count >= 100:  # Take 30 face sample and stop video
+    elif count >= 100:
         break
 
 # Do a bit of cleanup
