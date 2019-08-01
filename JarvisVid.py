@@ -3,79 +3,59 @@ from pygame import mixer
 import numpy as np
 import cv2
 import paho.mqtt.client as mqttClient
+from mqtt import publish,conn
 
-font = cv2.FONT_HERSHEY_SIMPLEX                             #задал шрифт
-mixer.init()                                                #подгрузка миксера для воспроизведения аудио
-r = sr.Recognizer()                                         #задал переменной r значение sr.Recognizer для упрощения кода
+font = cv2.FONT_HERSHEY_SIMPLEX                                                                 #задал шрифт
+mixer.init()                                                                                    #подгрузка миксера для воспроизведения аудио
+r = sr.Recognizer()                                                                             #задал переменной r значение sr.Recognizer для упрощения кода
+conn()                                                                                          #функция подключения к серверу
 
-def publish(inf):                                           #функция для публикации в mqtt сервер
-    client.connect(broker_address, port=port)               #подключение к серверу                               
-    client.publish("test/sc1",inf)                          #передача данных в папку test/sc1 на сервере
-    client.disconnect()                                     #отключение от сервера
+face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')                     #задал изображение каскада Хаара для лица
+recognizer =cv2.face.LBPHFaceRecognizer_create()                                                #задал распознаватель для лица
+recognizer.read('F:\\Jarvis\\trainer\\trainer.yml')                                             #загрузил базу данных в распознаватель(сбор лиц для обучения в файле dtst.py, а тренировка в train.py)
+cap = cv2.VideoCapture(0)                                                                       #получаю картинку с нулевой камеры
 
-broker_address= "m24.cloudmqtt.com"                         #адрес сервера
-port = 	17587                                               #порт сервера
-user = "fnetydgq"                                           #пользователь
-password = "SEbDu7GOHR35"                                   #пароль
-
-client = mqttClient.Client("Python")                        #создание нового клиента для сервера
-client.username_pw_set(user, password=password)             #присвоение клиенту юзернейма и пароля
-
-face_cascade = cv2.CascadeClassifier('C:\\Users\\Kash\\AppData\\Local\\Programs\\Python\\Python35\\Lib\\site-packages\\cv2\\data\\haarcascade_frontalface_default.xml')
-eye_cascade = cv2.CascadeClassifier('C:\\Users\\Kash\\AppData\\Local\\Programs\\Python\\Python35\\Lib\\site-packages\\cv2\\data\\haarcascade_eye.xml')
-
-recognizer =cv2.face.LBPHFaceRecognizer_create()
-recognizer.read('F:\\Jarvis\\trainer\\trainer.yml')
-cap = cv2.VideoCapture(0)
-
-names = ['None', 'Dasha', 'Nastya', 'Romario','Romario']
+names = ['None', 'Dasha', 'Nastya', 'Romario','Romario']                                        #id в файле dtst-номер имени в массиве
 while True:
-    putin = cv2.imread('C:\\Users\\Kash\\Desktop\\img.jpg')
-    ret,img = cap.read()
-    img = np.concatenate((img, putin), axis=1)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    
-    faces = face_cascade.detectMultiScale(gray,scaleFactor=1.2,minNeighbors=5,minSize=(20, 20))
-
+    putin = cv2.imread('C:\\Users\\Kash\\Desktop\\img.jpg')                                     #костыль чтобы не висла картинка,когда не найдено лицо
+    ret,img = cap.read()                                                                        #считываю каждый кадр с камеры для дальнейшей обработки
+    img = np.concatenate((img, putin), axis=1)                                                  #тот же костыль
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)                                                #перевел изображение в чб, т.к. быстрее обрабатывать
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)                                         #ищу лица с помощью каскадов Хаара
     for (x, y, w, h) in faces:
-            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            id,confidence = recognizer.predict(gray[y:y + h, x:x + w])
-
+            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)                          #обвожу лицо прямоугольником
+            id,confidence = recognizer.predict(gray[y:y + h, x:x + w])                          #сравниваю лицо с базой данных
             if (confidence <=55):
-                id = names[id]
-
-                if id=='Romario':
+               id = names[id]
+               if id=='Romario':
                     with sr.Microphone() as source:
                         print("Скажите что-нибудь")
-                        audio = r.listen(source)
-
+                        audio = r.listen(source)                                                #запись аудио для распознавания в текст
                     try:
-                        print(r.recognize_google(audio, language="ru-RU"))
-                        a=r.recognize_google(audio, language="ru-RU")
-
+                        a=r.recognize_google(audio, language="ru-RU")                           #задал переменной a значение распознанного аудио
+                        print(a)
                         if (a == "включить" or a == "вкв" or a == "включи" or a == "ключи"):
-                              publish(1)                                    #отправляю на сервер сигнал о включении
-                              mixer.music.load('on.mp3')                    #загружаю голос
-                              mixer.music.play()                            #проигрываю голос
-         
+                            publish(1)                                                          #отправляю на сервер сигнал о включении
+                            mixer.music.load('on.mp3')                                          #загружаю голос
+                            mixer.music.play()                                                  #проигрываю голос
+
                         if (a == "выключить" or a == "выключи"):
-                               publish(0)                                   #отправляю на сервер сигнал о выключении
-                               mixer.music.load('off.mp3')                  #загружаю голос
-                               mixer.music.play()                           #проигрываю голос
+                            publish(0)                                                          #отправляю на сервер сигнал о выключении
+                            mixer.music.load('off.mp3')                                         #загружаю голос
+                            mixer.music.play()                                                  #проигрываю голос
 
                     except sr.UnknownValueError:
-                        print("Робот не расслышал фразу")
+                        print("Робот не расслышал фразу")                                       #если фраза не понята, то робот напишет это, и опять начнет запись аудио
+
                     except sr.RequestError as e:
-                        print("Ошибка сервиса; {0}".format(e))
+                        print("Ошибка сервиса; {0}".format(e))                                  #это будет выдано, если проблема с интернетом или сервисом распознавания
 
             else:
                 id = "unknown"
 
-            cv2.putText(img, str(id), (x + 5, y - 5),font, 1, (255, 255, 255), 2)
-
-            img=img[0:640,0:640]
-            cv2.imshow('camera', img)
-            k = cv2.waitKey(1) & 0xff
-
+            cv2.putText(img, str(id), (x + 5, y - 5),font, 1, (255, 255, 255), 2)               #помещаю текст с именем найденного лица
+            img=img[0:640,0:640]                                                                #убрал Путина
+            cv2.imshow('camera', img)                                                           #показываю изображение с камеры
+            k = cv2.waitKey(1) & 0xff                                                           #без этого изображение не обновляется
 cap.release()
 cv2.destroyAllWindows()
