@@ -3,9 +3,10 @@ import numpy as np
 from PIL import Image
 import os
 
-path = 'F:\\Jarvis\\dataset'                                                    #сюда сохранялись лица при использовании dtst.py
+
+path = 'Documents/Github/Jarvis/dataset'                                        #сюда сохранялись лица при использовании dtst.py
 recognizer =cv2.face.LBPHFaceRecognizer_create()                                #задал распознаватель для лица
-detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')         #задал изображение каскада Хаара для лица
+detector = cv2.CascadeClassifier('Documents/Github/Jarvis/haarcascade_frontalface_default.xml')         #задал изображение каскада Хаара для лица
 
 def getImagesAndLabels(path):
     imagePaths = [os.path.join(path,f) for f in os.listdir(path)]               #считываю каждое изображение в папке
@@ -24,5 +25,5 @@ def getImagesAndLabels(path):
 
 faces,ids = getImagesAndLabels(path)
 recognizer.train(faces, np.array(ids))
-recognizer.write('F:\\Jarvis\\trainer\\trainer.yml')
+recognizer.write('Documents/Github/Jarvis/trainer/trainer.yml')
 print("Тренировка окончена")
